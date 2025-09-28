@@ -1,12 +1,12 @@
 from ultralytics import YOLO
 
 def main():
-    # Nanoモデルをロード（自動ダウンロード）
+    # 相対パスでモデルをロード
     model = YOLO('yolo11n.pt')
 
     # 学習実行
     model.train(
-        data='data.yaml',          # データ設定ファイル
+        data='Custom_training/Annotation/quadcopter/data.yaml',  # 相対パスでdata.yamlを指定
         epochs=30,                 # エポック数
         imgsz=640,                 # 短辺を640pxにリサイズ
         batch=16,                  # バッチサイズ（CPU: Core i7-13700KF, RAM 48GB）
