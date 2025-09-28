@@ -11,7 +11,8 @@ torch.set_num_threads(num_threads)
 device = 'cpu'
 
 # モデルのパスを指定してロード
-model = YOLO('yolo11n.pt')
+# model = YOLO('yolo11n.pt')
+model = YOLO("yolo11s.pt")
 model.to(device)
 
 # 使用中のデバイスとスレッド数を表示
