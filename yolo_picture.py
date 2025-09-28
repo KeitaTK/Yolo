@@ -19,6 +19,7 @@ print(f'使用デバイス: {model.device}')
 print(f'使用スレッド数: {num_threads}')
 
 # 画像ファイルを指定して推論を実行
-results = model.predict(source='Test1.jpg', save=True, conf=0.25)
+# results = model.predict(source='Test1.jpg', save=True, conf=0.25)
+results = model.predict(source='frame_00036.jpg', save=True, conf=0.25)
 
 print('推論完了。結果は保存されています。')
