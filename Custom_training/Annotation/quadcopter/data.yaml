@@ -1,0 +1,6 @@
+# data.yaml
+train: D:/taki_localD/Yolo/Custom_training/Annotation/quadcopter/images/train
+val:   D:/taki_localD/Yolo/Custom_training/Annotation/quadcopter/images/val
+
+nc: 1
+names: ['Quadcopter']
