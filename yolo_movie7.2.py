@@ -6,10 +6,13 @@ import subprocess
 import shlex
 from ultralytics import YOLO
 from multiprocessing import Process, Manager, cpu_count, Value, Lock
+import time  # 追加
 
 # 元のパス設定
 # INPUT_PATH  = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\2台上下.mp4"
-INPUT_PATH  = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\Guided.mp4"
+# INPUT_PATH  = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\Guided.mp4"
+# INPUT_PATH  = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\1台位置制御.mp4"
+INPUT_PATH = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-29\Manual.mp4"
 OUTPUT_PATH = os.path.join(os.path.dirname(INPUT_PATH), "output_with_boxes.mp4")
 MODEL_PATH  = r"yolo11n_quadcopter.pt"
 
@@ -28,12 +31,23 @@ def worker(frame_range, boxes_dict, counter, lock, total_frames, model_path):
     start_idx, end_idx = frame_range
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_idx)
 
+    processed_frames = 0
+    total_inference_time = 0.0
+    last_log_time = time.time()
+
     for idx in range(start_idx, end_idx):
         ret, frame = cap.read()
         if not ret:
             break
 
+        # YOLO推論の時間のみ計測
+        inference_start = time.time()
         results = model.predict(frame, conf=0.25, verbose=False)
+        inference_end = time.time()
+        
+        inference_time = inference_end - inference_start
+        total_inference_time += inference_time
+
         detections = []
         for r in results[0].boxes.data.cpu().numpy():
             x1, y1, x2, y2, _, cls = r
@@ -43,9 +57,18 @@ def worker(frame_range, boxes_dict, counter, lock, total_frames, model_path):
         del frame, results
         gc.collect()
 
+        processed_frames += 1
+        now = time.time()
+
+        # 1秒ごとにYOLO推論FPSを表示
+        if now - last_log_time >= 1.0 or processed_frames == (end_idx - start_idx):
+            yolo_fps = processed_frames / total_inference_time if total_inference_time > 0 else 0
+            with lock:
+                print(f"\rInference progress: {counter.value+1}/{total_frames} | YOLO FPS: {yolo_fps:.1f}", end="", flush=True)
+            last_log_time = now
+
         with lock:
             counter.value += 1
-            print(f"\rInference progress: {counter.value}/{total_frames}", end="", flush=True)
 
     cap.release()
 
@@ -92,11 +115,13 @@ def main():
     ffmpeg_path = "ffmpeg"  # PATH に登録済みと仮定
     cmd = (
         f"{ffmpeg_path} -y "
+        "-hwaccel cuda -hwaccel_output_format cuda "
         f"-f rawvideo -pix_fmt bgr24 -s {width}x{height} -r {fps} -i - "
-        f"-c:v h264_nvenc -preset p7 -rc vbr_hq -cq 19 "
-        f"-pix_fmt yuv420p "
+        "-vf \"format=bgr24,hwupload_cuda\" "
+        "-c:v h264_nvenc -preset p7 -rc vbr_hq -cq 19 "
         f"\"{OUTPUT_PATH}\""
     )
+
     proc = subprocess.Popen(shlex.split(cmd), stdin=subprocess.PIPE)
 
     # 描画＋エンコードループ
