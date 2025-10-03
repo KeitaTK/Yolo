@@ -49,9 +49,14 @@ def worker(frame_range, boxes_dict, counter, lock, total_frames, model_path):
         total_inference_time += inference_time
 
         detections = []
-        for r in results[0].boxes.data.cpu().numpy():
-            x1, y1, x2, y2, _, cls = r
-            detections.append((int(x1), int(y1), int(x2), int(y2), int(cls)))
+        # ここでクラス名と確率も取得
+        boxes = results[0].boxes
+        names = model.names
+        for r in boxes.data.cpu().numpy():
+            x1, y1, x2, y2, conf, cls = r
+            class_id = int(cls)
+            class_name = names[class_id] if class_id < len(names) else str(class_id)
+            detections.append((int(x1), int(y1), int(x2), int(y2), class_id, float(conf), class_name))
 
         boxes_dict[idx] = detections
         del frame, results
@@ -132,8 +137,11 @@ def main():
         if not ret:
             break
         dets = boxes_dict.get(idx, [])
-        for x1, y1, x2, y2, cls in dets:
+        for x1, y1, x2, y2, cls, conf, class_name in dets:
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            label = f"{class_name} {conf:.2f}"
+            # ラベルを矩形の左上に描画
+            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
         proc.stdin.write(frame.tobytes())
         idx += 1
 
