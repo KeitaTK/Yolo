@@ -11,7 +11,8 @@ import time
 import threading
 
 # パス設定
-INPUT_PATH = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\2台上下.mp4"
+# INPUT_PATH = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\2台上下.mp4"
+INPUT_PATH = r"C:\Users\Umemoto\Downloads\OneDrive_1_2025-9-28\1台位置制御.mp4"
 OUTPUT_PATH = os.path.join(os.path.dirname(INPUT_PATH), "output_with_boxes.mp4")
 MODEL_PATH = r"yolo11n_quadcopter.pt"
 
